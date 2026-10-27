@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: detect-private-key
+      - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: backend-ruff-format
+        name: "backend: ruff format"
+        entry: uv run --project backend ruff format --config=backend/pyproject.toml
+        language: system
+        files: ^backend/.*\.py$
+      - id: backend-ruff-check
+        name: "backend: ruff check"
+        entry: uv run --project backend ruff check --fix --config=backend/pyproject.toml
+        language: system
+        files: ^backend/.*\.py$
+      - id: backend-mypy
+        name: "backend: mypy"
+        entry: uv run --project backend mypy --config-file=backend/pyproject.toml
+        language: system
+        files: ^backend/src/.*\.py$

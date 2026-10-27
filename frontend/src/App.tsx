@@ -13,7 +13,7 @@ import {
 import WorkflowNodeView from './components/WorkflowNodeView';
 import AuthScreen from './components/AuthScreen';
 import { authApi, getStoredSession, type AuthSession } from './api/auth';
-import { api, apiMode } from './api/client';
+import { api, apiMode, checkApiReadiness } from './api/client';
 import { createSeedGraph } from './api/seed';
 import type { ExecutionSummary, ExecutionTrace, NodeKind, NodeRun, ToolDefinition, ValidationResult, WorkflowDocument, WorkflowEdge, WorkflowGraph, WorkflowNode, WorkflowNodeData, WorkflowSummary } from './api/types';
 
@@ -21,6 +21,7 @@ const nodeTypes = { workflowNode: WorkflowNodeView };
 type ViewKey = 'editor' | 'workflows' | 'runs' | 'tools' | 'templates' | 'settings';
 type ToastType = 'success' | 'error' | 'info';
 type Toast = { message: string; type: ToastType } | null;
+type ApiHealth = 'checking' | 'connected' | 'unhealthy';
 
 const nodePalette: { kind: NodeKind; label: string; description: string; icon: typeof Braces; tone: string }[] = [
   { kind: 'input', label: 'Input', description: 'Start with user data', icon: Braces, tone: 'violet' },
@@ -119,6 +120,7 @@ function AppInner() {
 }`);
   const [showRunInput, setShowRunInput] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [apiHealth, setApiHealth] = useState<ApiHealth>('checking');
   const [search, setSearch] = useState('');
   const [nodeFilter, setNodeFilter] = useState<'all' | 'failed' | 'slow'>('all');
   const { screenToFlowPosition } = useReactFlow();
@@ -190,6 +192,25 @@ function AppInner() {
     void bootstrap();
     return () => { cancelled = true; };
   }, [authSession, notify, setEdges, setNodes]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    async function pollReadiness() {
+      const healthy = await checkApiReadiness(controller.signal);
+      if (active) setApiHealth(healthy ? 'connected' : 'unhealthy');
+    }
+
+    void pollReadiness();
+    const timer = window.setInterval(() => void pollReadiness(), 15000);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!authSession || !selectedExecutionId) { setTrace(null); return; }
@@ -441,6 +462,13 @@ function AppInner() {
 
   const graphNodeCount = nodes.length;
   const traceDuration = trace?.execution.duration_ms;
+  const healthStatus = apiHealth === 'connected'
+    ? { label: 'API CONNECTED', footer: 'API connected', tone: 'connected' }
+    : apiHealth === 'unhealthy'
+      ? { label: 'API UNAVAILABLE', footer: 'API unavailable', tone: 'unhealthy' }
+      : { label: 'CHECKING API', footer: 'Checking API…', tone: 'checking' };
+  const environmentStatus = apiMode === 'DEMO' ? { label: 'DEMO MODE', tone: 'demo' } : healthStatus;
+  const footerStatus = apiMode === 'DEMO' ? `Demo data · ${healthStatus.footer}` : healthStatus.footer;
 
   if (!authSession) return <AuthScreen onAuthenticated={handleAuthenticated} />;
 
@@ -491,7 +519,7 @@ function AppInner() {
             <div className="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><span>{view === 'editor' ? 'Workflows' : navTitle(view)}</span>{view === 'editor' && workflow && <><ChevronRight size={14} /><strong>{workflow.name}</strong></>}</div>
           </div>
           <div className="topbar-actions">
-            <div className={`environment-badge ${apiMode === 'DEMO' ? 'demo' : 'connected'}`}><span className="status-dot" />{apiMode === 'DEMO' ? 'DEMO MODE' : 'API MODE'}</div>
+            <div className={`environment-badge ${environmentStatus.tone}`}><span className="status-dot" />{environmentStatus.label}</div>
             <button className="icon-button" title="Keyboard shortcuts" onClick={() => notify('Shortcuts: ⌘/Ctrl + S to save · Drag nodes to move · Connect handles to create edges', 'info')}><Command size={17} /></button>
             <button className="icon-button notification-button" title="Notifications" onClick={() => setView('runs')}><Bell size={17} /><span /></button>
             <div className="topbar-divider" />
@@ -529,7 +557,7 @@ function AppInner() {
                   })}
                 </div>
                 <div className="library-tip"><div className="tip-icon"><Zap size={14} /></div><div><strong>Quick tip</strong><p>Drag from a node handle to connect steps. Select a node to configure it.</p></div></div>
-                <div className="library-footer"><span className="green-indicator" />All systems operational</div>
+                <div className="library-footer"><span className={`green-indicator ${healthStatus.tone}`} />{footerStatus}</div>
               </aside>
 
               <section className="canvas-section">

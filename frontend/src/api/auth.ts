@@ -21,7 +21,7 @@ export interface SignUpPayload {
 const SESSION_KEY = 'agentdesk.auth.session.v1';
 const USERS_KEY = 'agentdesk.auth.mock_users.v1';
 const IS_API_MODE = (import.meta.env.VITE_API_MODE ?? 'mock') === 'api';
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 type MockUser = AuthUser & { password: string };
 
