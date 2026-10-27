@@ -56,10 +56,19 @@ class ServerSettings(EnvSettings):
     port: Annotated[int, Field(ge=1, le=65535)] = 8080
 
 
+class CorsSettings(EnvSettings):
+    model_config = SettingsConfigDict(env_prefix="CORS_")
+
+    origins: list[str] = ["*"]
+    methods: list[str] = ["*"]
+    headers: list[str] = ["*"]
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     database: DatabaseSettings
     server: ServerSettings
+    cors: CorsSettings
 
     @property
     def backend_dir(self) -> Path:
@@ -72,4 +81,5 @@ def load_settings() -> Settings:
     return Settings(
         database=DatabaseSettings(),  # type: ignore[call-arg]
         server=ServerSettings(),
+        cors=CorsSettings(),
     )
