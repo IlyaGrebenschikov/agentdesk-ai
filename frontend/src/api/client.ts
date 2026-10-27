@@ -8,7 +8,7 @@ import { getAccessToken } from './auth';
 import { createSeedGraph } from './seed';
 
 const mode = import.meta.env.VITE_API_MODE ?? 'mock';
-const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1').replace(/\/$/, '');
+const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAccessToken();

@@ -45,14 +45,14 @@ npm run preview
 
 ```env
 VITE_API_MODE=mock
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
 Для обращения к FastAPI переключи режим:
 
 ```env
 VITE_API_MODE=api
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
 После изменения `.env` перезапусти Vite. В UI режим виден в верхней панели как `DEMO MODE` или `API MODE`.

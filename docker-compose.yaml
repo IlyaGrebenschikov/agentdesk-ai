@@ -1,0 +1,88 @@
+name: agentdesk
+
+# To reuse database credentials from backend/.env:
+#   docker compose --env-file backend/.env up --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentdesk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-agentdesk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentdesk}
+      POSTGRES_DB: ${DB_DATABASE:-agentdesk}
+    volumes:
+      - agentdesk-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - agentdesk-db-network
+
+  postgres-port-forwarder:
+    image: alpine/socat:latest
+    container_name: agentdesk-postgres-port-forwarder
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentdesk-db-network
+    command: ["tcp-listen:5432,fork,reuseaddr", "tcp-connect:postgres:5432"]
+
+  api:
+    container_name: agentdesk-api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/src:/usr/agentdesk/backend/src
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentdesk-network
+      - agentdesk-db-network
+
+  frontend:
+    container_name: agentdesk-frontend
+    restart: unless-stopped
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/usr/agentdesk/frontend
+      - agentdesk-frontend-node-modules:/usr/agentdesk/frontend/node_modules
+    environment:
+      VITE_API_MODE: ${VITE_API_MODE:-mock}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api/v1}
+    depends_on:
+      - api
+    networks:
+      - agentdesk-network
+
+volumes:
+  agentdesk-postgres-data:
+  agentdesk-frontend-node-modules:
+
+networks:
+  agentdesk-network:
+    name: agentdesk-network
+    driver: bridge
+  agentdesk-db-network:
+    name: agentdesk-db-network
+    driver: bridge
