@@ -26,6 +26,6 @@ class DatabaseHealthChecker(IDatabaseHealthChecker):
                 self._timeout,
             )
             raise ServiceUnavailableError("Database health check timed out") from err
-        except SQLAlchemyError as err:
-            log.exception("Database health check failed")
+        except (SQLAlchemyError, OSError) as err:
+            log.warning("Database health check failed: %s", err)
             raise ServiceUnavailableError("Database is unavailable") from err
