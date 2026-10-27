@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "asyncpg>=0.32.0",
+    "dishka>=1.10.1",
     "fastapi>=0.162.0",
     "mypy>=2.4.0",
     "pydantic-settings>=2.16.1",
