@@ -1,7 +1,8 @@
 name: agentdesk
 
-# To reuse database credentials from backend/.env:
+# Optional: reuse values from backend/.env:
 #   docker compose --env-file backend/.env up --build
+# Without that file Compose uses the defaults below.
 
 services:
   postgres:
@@ -44,10 +45,14 @@ services:
       - "8080:8080"
     volumes:
       - ./backend/src:/usr/agentdesk/backend/src
-    env_file:
-      - ./backend/.env
     environment:
       DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-agentdesk}
+      DB_PASSWORD: ${DB_PASSWORD:-agentdesk}
+      DB_DATABASE: ${DB_DATABASE:-agentdesk}
+      DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
+      DB_HEALTH_CHECK_TIMEOUT: ${DB_HEALTH_CHECK_TIMEOUT:-5}
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,12 +62,12 @@ services:
         - curl
         - -fsS
         - --max-time
-        - "2"
+        - "6"
         - -o
         - /dev/null
         - http://localhost:8080/api/v1/health/ready
       interval: 10s
-      timeout: 3s
+      timeout: 7s
       retries: 5
       start_period: 10s
     networks:

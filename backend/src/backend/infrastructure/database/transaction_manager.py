@@ -50,7 +50,8 @@ class TransactionManager(ITransactionManager):
     Raises:
        TransactionAlreadyStartedError: If the session already has an active
            transaction (autobegin protection)
-       ConflictError: If commit fails because of an integrity constraint
+       ConflictError: If a statement or commit fails because of an integrity
+           constraint
        CommitError: If commit fails for any other database reason
        RollbackError: If rollback fails
     """
@@ -84,6 +85,8 @@ class TransactionManager(ITransactionManager):
                 await transaction.rollback()
             except SQLAlchemyError as err:
                 raise RollbackError(err) from err
+            if isinstance(exc_value, IntegrityError):
+                raise ConflictError("Resource conflict") from exc_value
             return
 
         try:
