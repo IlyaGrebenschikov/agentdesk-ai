@@ -51,6 +51,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -fsS
+        - --max-time
+        - "2"
+        - -o
+        - /dev/null
+        - http://localhost:8080/api/v1/health/ready
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - agentdesk-network
       - agentdesk-db-network

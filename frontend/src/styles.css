@@ -82,8 +82,12 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .topbar-actions { gap: 12px; }
 .environment-badge { display: flex; align-items: center; gap: 7px; padding: 5px 8px; border: 1px solid #35313f; background: #201d2b; border-radius: 6px; color: #b3a1fb; font-size: 8.5px; font-weight: 750; letter-spacing: .7px; }
 .environment-badge.connected { color: #80dcb2; background: #172820; border-color: #264638; }
+.environment-badge.checking { color: #d8bd7a; background: #29241a; border-color: #4a4028; }
+.environment-badge.unhealthy { color: #f38a91; background: #342027; border-color: #58313a; }
 .status-dot, .environment-badge .status-dot { display: inline-block; width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: #987fff; }
 .environment-badge.connected .status-dot { background: #5bd59c; box-shadow: 0 0 0 3px #5bd59c19; }
+.environment-badge.checking .status-dot { background: #e7ae58; box-shadow: 0 0 0 3px #e7ae5819; }
+.environment-badge.unhealthy .status-dot { background: #f57882; box-shadow: 0 0 0 3px #f5788219; }
 .icon-button { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid transparent; border-radius: 7px; color: #989aac; background: transparent; transition: background .15s, color .15s, border-color .15s; }
 .icon-button:hover { border-color: #343541; background: #23242e; color: #eeeeF8; }
 .icon-button.compact { width: 25px; height: 25px; border-color: #30313e; background: #1d1e27; }
@@ -162,6 +166,9 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .library-tip p { margin: 5px 0 0; color: #9290a7; font-size: 8.5px; line-height: 1.55; }
 .library-footer { display: flex; align-items: center; gap: 6px; padding: 10px 12px 12px; border-top: 1px solid #292a35; color: #717386; font-size: 8.5px; }
 .green-indicator { width: 5px; height: 5px; border-radius: 50%; background: #54c58c; }
+.green-indicator.demo { background: #987fff; }
+.green-indicator.checking { background: #e7ae58; }
+.green-indicator.unhealthy { background: #f57882; }
 
 .canvas-section { display: flex; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; background: #12131a; }
 .canvas-toolbar { z-index: 8; display: flex; flex: 0 0 41px; align-items: center; justify-content: space-between; padding: 0 13px; border-bottom: 1px solid #282a34; background: #171820; }
