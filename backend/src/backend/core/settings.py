@@ -31,6 +31,7 @@ class DatabaseSettings(EnvSettings):
     username: str
     password: SecretStr
     database: str
+    health_check_timeout: Annotated[float, Field(gt=0)] = 5.0
 
     @property
     def url_obj(self) -> URL:
