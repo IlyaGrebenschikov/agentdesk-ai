@@ -39,9 +39,11 @@ class CreateUserHandler:
         self._pwd_hash_limiter = pwd_hash_limiter
 
     async def execute(self, cmd: CreateUserCMD) -> User:
+        email = cmd.email.lower()
+
         async with self._transaction_manager:
-            if await self._users_repository.get_user_by_email(cmd.email):
-                log.warning("User already exists: email=%s", cmd.email)
+            if await self._users_repository.get_user_by_email(email):
+                log.warning("User creation rejected: email already exists")
                 raise ConflictError("User with this email already exists")
 
             # Argon2 is CPU-bound: run it in a thread and cap concurrent hashes.
@@ -51,7 +53,7 @@ class CreateUserHandler:
                 )
 
             user = await self._users_repository.create_user(
-                TCreateUser(email=cmd.email, password_hash=password_hash)
+                TCreateUser(email=email, password_hash=password_hash)
             )
 
         log.info("User created: id=%s", user.id)

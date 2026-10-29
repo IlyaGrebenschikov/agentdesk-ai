@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import EmailStr, field_validator
+from pydantic import EmailStr, Field, field_validator
 
 from .base import BaseDTO, BaseResponseDTO
 
@@ -11,7 +11,7 @@ class UserResponseDTO(BaseResponseDTO):
 
 
 class CreateUserDTO(BaseDTO):
-    email: EmailStr
+    email: EmailStr = Field(max_length=250)
     password: str
 
     @field_validator("password")

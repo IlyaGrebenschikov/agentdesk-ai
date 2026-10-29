@@ -48,6 +48,33 @@ async def test_create_user_rejects_duplicate_email(
     assert response.json() == {"message": "User with this email already exists"}
 
 
+async def test_create_user_normalizes_email_case(api_client: AsyncClient) -> None:
+    created = await create_user(api_client, email="User@Example.COM")
+
+    assert created["email"] == "user@example.com"
+
+    response = await api_client.post(
+        USERS_URL,
+        json={"email": "user@example.com", "password": "password1"},
+    )
+
+    assert response.status_code == 409
+
+
+async def test_create_user_rejects_too_long_email(api_client: AsyncClient) -> None:
+    local_part = "a" * 64
+    domain = ".".join(["b" * 63, "c" * 63, "d" * 58])
+    email = f"{local_part}@{domain}"
+
+    response = await api_client.post(
+        USERS_URL,
+        json={"email": email, "password": "password1"},
+    )
+
+    assert response.status_code == 422
+    assert "250" in response.text
+
+
 @pytest.mark.parametrize(
     ("password", "expected_message"),
     [

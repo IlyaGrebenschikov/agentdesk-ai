@@ -16,7 +16,6 @@ dependencies = [
     "mypy>=2.4.0",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.16.1",
-    "pyjwt>=2.15.1",
     "ruff>=0.17.3",
     "sqlalchemy[asyncio]>=2.1.6",
     "uvicorn>=0.54.0",
