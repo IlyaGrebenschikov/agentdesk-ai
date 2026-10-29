@@ -21,10 +21,12 @@ from backend.core.settings import (
     Settings,
 )
 from backend.infrastructure.database.connection import create_sa_session_factory
+from backend.infrastructure.database.models import Base
 from backend.presentation.api import init_api
 from tests.fakes import (
     FakeDatabaseHealthChecker,
     FakeDatabaseHealthCheckerProvider,
+    SqliteSessionProvider,
 )
 
 
@@ -54,10 +56,12 @@ def settings() -> Settings:
 async def container(
     fake_db_checker: FakeDatabaseHealthChecker,
     settings: Settings,
+    sqlite_session_provider: SqliteSessionProvider,
 ) -> AsyncIterator[AsyncContainer]:
     container = make_async_container(
         *get_ioc_providers(settings),
         FakeDatabaseHealthCheckerProvider(fake_db_checker),
+        sqlite_session_provider,
     )
 
     yield container
@@ -93,6 +97,7 @@ async def sqlite_engine() -> AsyncIterator[AsyncEngine]:
                 "CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)"
             )
         )
+        await connection.run_sync(Base.metadata.create_all)
     yield engine
     await engine.dispose()
 
@@ -102,6 +107,13 @@ def sqlite_session_factory(
     sqlite_engine: AsyncEngine,
 ) -> async_sessionmaker[AsyncSession]:
     return create_sa_session_factory(sqlite_engine)
+
+
+@pytest.fixture
+def sqlite_session_provider(
+    sqlite_session_factory: async_sessionmaker[AsyncSession],
+) -> SqliteSessionProvider:
+    return SqliteSessionProvider(sqlite_session_factory)
 
 
 @pytest.fixture
