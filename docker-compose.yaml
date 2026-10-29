@@ -75,6 +75,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-agentdesk}
       DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
       DB_HEALTH_CHECK_TIMEOUT: ${DB_HEALTH_CHECK_TIMEOUT:-5}
+      PWD_HASH_MAX_THREADS: ${PWD_HASH_MAX_THREADS:-4}
     depends_on:
       postgres:
         condition: service_healthy

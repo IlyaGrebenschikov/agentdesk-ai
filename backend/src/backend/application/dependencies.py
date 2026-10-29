@@ -1,7 +1,42 @@
+import asyncio
+
 from dishka import Provider, Scope, provide
 
+from backend.application.features.users import CreateUserHandler
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
+from backend.application.interfaces.database.repositories import IUsersRepository
+from backend.application.interfaces.database.transaction_manager import (
+    ITransactionManager,
+)
+from backend.application.interfaces.pwd_hasher import IPwdHasher
+from backend.application.limiters import PwdHashLimiter
 from backend.application.services.health import HealthCheckService
+from backend.core.settings import PwdHashSettings
+
+
+class UserFeaturesProvider(Provider):
+    def __init__(self, settings: PwdHashSettings) -> None:
+        super().__init__()
+        self._settings = settings
+
+    @provide(scope=Scope.APP)
+    def pwd_hash_limiter(self) -> PwdHashLimiter:
+        return PwdHashLimiter(asyncio.Semaphore(self._settings.max_threads))
+
+    @provide(scope=Scope.REQUEST)
+    def create_user_handler(
+        self,
+        transaction_manager: ITransactionManager,
+        users_repository: IUsersRepository,
+        pwd_hasher: IPwdHasher,
+        pwd_hash_limiter: PwdHashLimiter,
+    ) -> CreateUserHandler:
+        return CreateUserHandler(
+            transaction_manager,
+            users_repository,
+            pwd_hasher,
+            pwd_hash_limiter,
+        )
 
 
 class HealthCheckProvider(Provider):

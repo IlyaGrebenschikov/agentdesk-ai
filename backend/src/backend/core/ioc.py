@@ -3,7 +3,7 @@ import logging
 from dishka import AsyncContainer, make_async_container
 from dishka.provider import BaseProvider
 
-from backend.application.dependencies import HealthCheckProvider
+from backend.application.dependencies import HealthCheckProvider, UserFeaturesProvider
 from backend.infrastructure.dependencies import (
     DatabaseProvider,
     HealthCheckersProvider,
@@ -21,6 +21,7 @@ def get_ioc_providers(settings: Settings) -> tuple[BaseProvider, ...]:
         RepositoriesProvider(),
         HealthCheckersProvider(settings.database.health_check_timeout),
         HealthCheckProvider(),
+        UserFeaturesProvider(settings.pwd_hash),
         PwdHasherProvider(),
     )
 
