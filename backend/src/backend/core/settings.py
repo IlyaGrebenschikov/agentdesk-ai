@@ -64,11 +64,18 @@ class CorsSettings(EnvSettings):
     headers: list[str] = ["*"]
 
 
+class PwdHashSettings(EnvSettings):
+    model_config = SettingsConfigDict(env_prefix="PWD_HASH_")
+
+    max_threads: Annotated[int, Field(ge=1)] = 4
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     database: DatabaseSettings
     server: ServerSettings
     cors: CorsSettings
+    pwd_hash: PwdHashSettings
 
     @property
     def backend_dir(self) -> Path:
@@ -82,4 +89,5 @@ def load_settings() -> Settings:
         database=DatabaseSettings(),  # type: ignore[call-arg]
         server=ServerSettings(),
         cors=CorsSettings(),
+        pwd_hash=PwdHashSettings(),
     )

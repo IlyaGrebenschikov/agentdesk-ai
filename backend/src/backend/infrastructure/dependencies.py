@@ -1,19 +1,24 @@
 from collections.abc import AsyncIterator
 
 from dishka import BaseScope, Provider, Scope, provide
+from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
+from backend.application.interfaces.database.repositories import IUsersRepository
 from backend.application.interfaces.database.transaction_manager import (
     ITransactionManager,
 )
+from backend.application.interfaces.pwd_hasher import IPwdHasher
 from backend.core.settings import DatabaseSettings
 from backend.infrastructure.database.connection import (
     create_sa_engine,
     create_sa_session_factory,
 )
 from backend.infrastructure.database.health import DatabaseHealthChecker
+from backend.infrastructure.database.repositories import UsersRepository
 from backend.infrastructure.database.transaction_manager import TransactionManager
+from .pwd_hasher import Argon2PwdHasher
 
 
 class DatabaseProvider(Provider):
@@ -48,6 +53,12 @@ class DatabaseProvider(Provider):
         return TransactionManager(session)
 
 
+class RepositoriesProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    def users_repository(self, session: AsyncSession) -> IUsersRepository:
+        return UsersRepository(session)
+
+
 class HealthCheckersProvider(Provider):
     def __init__(
         self,
@@ -61,3 +72,13 @@ class HealthCheckersProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def database_health_checker(self, session: AsyncSession) -> IDatabaseHealthChecker:
         return DatabaseHealthChecker(session, self._database_timeout)
+
+
+class PwdHasherProvider(Provider):
+    @provide(scope=Scope.APP)
+    def get_password_hash(self) -> PasswordHash:
+        return PasswordHash.recommended()
+
+    @provide(scope=Scope.APP)
+    def argon2_hasher(self, hasher: PasswordHash) -> IPwdHasher:
+        return Argon2PwdHasher(hasher)

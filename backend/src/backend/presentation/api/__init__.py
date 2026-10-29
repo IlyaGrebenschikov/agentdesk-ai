@@ -3,7 +3,6 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 
 from backend.core.settings import Settings
-
 from .controllers import setup_controllers
 from .handlers import setup_cors_middleware, setup_exception_handlers
 

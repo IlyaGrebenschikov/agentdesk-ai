@@ -36,6 +36,28 @@ services:
       - agentdesk-db-network
     command: ["tcp-listen:5432,fork,reuseaddr", "tcp-connect:postgres:5432"]
 
+  migrate:
+    container_name: agentdesk-migrate
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    volumes:
+      - ./backend/src:/usr/agentdesk/backend/src
+    environment:
+      DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USERNAME: ${DB_USERNAME:-agentdesk}
+      DB_PASSWORD: ${DB_PASSWORD:-agentdesk}
+      DB_DATABASE: ${DB_DATABASE:-agentdesk}
+      DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - agentdesk-db-network
+    restart: "no"
+
   api:
     container_name: agentdesk-api
     build:
@@ -53,9 +75,12 @@ services:
       DB_DATABASE: ${DB_DATABASE:-agentdesk}
       DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
       DB_HEALTH_CHECK_TIMEOUT: ${DB_HEALTH_CHECK_TIMEOUT:-5}
+      PWD_HASH_MAX_THREADS: ${PWD_HASH_MAX_THREADS:-4}
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD
