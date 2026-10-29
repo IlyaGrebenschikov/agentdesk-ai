@@ -2,7 +2,7 @@ import asyncio
 
 from dishka import Provider, Scope, provide
 
-from backend.application.features.users import CreateUserHandler
+from backend.application.features.users import CreateUserHandler, GetUserHandler
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
 from backend.application.interfaces.database.repositories import IUsersRepository
 from backend.application.interfaces.database.transaction_manager import (
@@ -37,6 +37,13 @@ class UserFeaturesProvider(Provider):
             pwd_hasher,
             pwd_hash_limiter,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_user_handler(
+        self,
+        users_repository: IUsersRepository,
+    ) -> GetUserHandler:
+        return GetUserHandler(users_repository)
 
 
 class HealthCheckProvider(Provider):
