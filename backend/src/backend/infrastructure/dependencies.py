@@ -5,6 +5,7 @@ from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
+from backend.application.interfaces.database.repositories import IUsersRepository
 from backend.application.interfaces.database.transaction_manager import (
     ITransactionManager,
 )
@@ -15,8 +16,8 @@ from backend.infrastructure.database.connection import (
     create_sa_session_factory,
 )
 from backend.infrastructure.database.health import DatabaseHealthChecker
+from backend.infrastructure.database.repositories import UsersRepository
 from backend.infrastructure.database.transaction_manager import TransactionManager
-
 from .pwd_hasher import Argon2PwdHasher
 
 
@@ -50,6 +51,12 @@ class DatabaseProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def transaction_manager(self, session: AsyncSession) -> ITransactionManager:
         return TransactionManager(session)
+
+
+class RepositoriesProvider(Provider):
+    @provide(scope=Scope.REQUEST)
+    def users_repository(self, session: AsyncSession) -> IUsersRepository:
+        return UsersRepository(session)
 
 
 class HealthCheckersProvider(Provider):

@@ -8,8 +8,8 @@ from backend.infrastructure.dependencies import (
     DatabaseProvider,
     HealthCheckersProvider,
     PwdHasherProvider,
+    RepositoriesProvider,
 )
-
 from .settings import Settings
 
 log = logging.getLogger(__name__)
@@ -18,6 +18,7 @@ log = logging.getLogger(__name__)
 def get_ioc_providers(settings: Settings) -> tuple[BaseProvider, ...]:
     return (
         DatabaseProvider(settings.database),
+        RepositoriesProvider(),
         HealthCheckersProvider(settings.database.health_check_timeout),
         HealthCheckProvider(),
         PwdHasherProvider(),
