@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Annotated, Literal, Self
+from urllib.parse import quote
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -64,6 +65,24 @@ class CorsSettings(EnvSettings):
     headers: list[str] = ["*"]
 
 
+class CacheSettings(EnvSettings):
+    model_config = SettingsConfigDict(env_prefix="CACHE_")
+
+    host: str = "localhost"
+    port: Annotated[int, Field(ge=1, le=65535)] = 6379
+    password: SecretStr | None = None
+
+    @property
+    def url(self) -> str:
+        password = self.password.get_secret_value() if self.password else ""
+        credentials = f":{quote(password, safe='')}@" if password else ""
+        return f"redis://{credentials}{self.host}:{self.port}"
+
+    @property
+    def safe_url(self) -> str:
+        return f"redis://{self.host}:{self.port}"
+
+
 class PwdHashSettings(EnvSettings):
     model_config = SettingsConfigDict(env_prefix="PWD_HASH_")
 
@@ -114,6 +133,7 @@ class Settings:
     database: DatabaseSettings
     server: ServerSettings
     cors: CorsSettings
+    cache: CacheSettings
     pwd_hash: PwdHashSettings
     jwt: JWTSettings
 
@@ -129,6 +149,7 @@ def load_settings() -> Settings:
         database=DatabaseSettings(),  # type: ignore[call-arg]
         server=ServerSettings(),
         cors=CorsSettings(),
+        cache=CacheSettings(),
         pwd_hash=PwdHashSettings(),
         jwt=JWTSettings(),
     )

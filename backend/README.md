@@ -39,3 +39,17 @@ are only provided at runtime.
 Token lifetimes are configured in minutes with
 `JWT_ACCESS_EXPIRATION_MINUTES` (default `30`) and
 `JWT_REFRESH_EXPIRATION_MINUTES` (default `43200`, i.e. 30 days).
+
+## Cache (Redis)
+
+Redis stores active refresh-token JTIs. The connection is configured with:
+
+```env
+CACHE_HOST=localhost
+CACHE_PORT=6379
+CACHE_PASSWORD=agentdesk
+```
+
+In Docker Compose the `api` service connects to the `redis` service, while
+`redis-port-forwarder` exposes Redis on `127.0.0.1:6379` for local tools. Redis
+data is persisted in the `agentdesk-redis-data` volume.

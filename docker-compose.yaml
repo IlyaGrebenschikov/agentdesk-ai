@@ -58,8 +58,39 @@ services:
       - agentdesk-db-network
     restart: "no"
 
+  redis:
+    image: redis:7-alpine
+    container_name: agentdesk-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${CACHE_PASSWORD:-agentdesk}"]
+    environment:
+      CACHE_PASSWORD: ${CACHE_PASSWORD:-agentdesk}
+    volumes:
+      - agentdesk-redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$CACHE_PASSWORD redis-cli ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - agentdesk-cache-network
+
+  redis-port-forwarder:
+    image: alpine/socat:latest
+    container_name: agentdesk-redis-port-forwarder
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - agentdesk-cache-network
+    command: ["tcp-listen:6379,fork,reuseaddr", "tcp-connect:redis:6379"]
+
   api:
     container_name: agentdesk-api
+    restart: unless-stopped
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -76,6 +107,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-agentdesk}
       DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
       DB_HEALTH_CHECK_TIMEOUT: ${DB_HEALTH_CHECK_TIMEOUT:-5}
+      CACHE_HOST: redis
+      CACHE_PORT: ${CACHE_PORT:-6379}
+      CACHE_PASSWORD: ${CACHE_PASSWORD:-agentdesk}
       PWD_HASH_MAX_THREADS: ${PWD_HASH_MAX_THREADS:-4}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
       JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES:-30}
@@ -85,6 +119,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -102,6 +138,7 @@ services:
     networks:
       - agentdesk-network
       - agentdesk-db-network
+      - agentdesk-cache-network
 
   frontend:
     container_name: agentdesk-frontend
@@ -125,6 +162,7 @@ services:
 
 volumes:
   agentdesk-postgres-data:
+  agentdesk-redis-data:
   agentdesk-frontend-node-modules:
 
 networks:
@@ -133,4 +171,7 @@ networks:
     driver: bridge
   agentdesk-db-network:
     name: agentdesk-db-network
+    driver: bridge
+  agentdesk-cache-network:
+    name: agentdesk-cache-network
     driver: bridge
