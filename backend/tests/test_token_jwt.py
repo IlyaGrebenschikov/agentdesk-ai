@@ -4,8 +4,6 @@ from uuid import UUID, uuid4
 
 import jwt
 import pytest
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 from dishka import AsyncContainer
 from pydantic import ValidationError
 
@@ -15,27 +13,9 @@ from backend.application.interfaces.services.token_jwt import ITokenJWTService
 from backend.core.settings import JWTSettings
 
 
-def _write_key_pair(directory: Path) -> None:
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    (directory / "jwt-private.pem").write_bytes(
-        private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-    )
-    (directory / "jwt-public.pem").write_bytes(
-        private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-    )
-
-
 @pytest.fixture
-def jwt_settings(tmp_path: Path) -> JWTSettings:
-    _write_key_pair(tmp_path)
-    return JWTSettings(_env_file=None, certs_dir=tmp_path)
+def jwt_settings(jwt_certs_dir: Path) -> JWTSettings:
+    return JWTSettings(_env_file=None, certs_dir=jwt_certs_dir)
 
 
 @pytest.fixture
