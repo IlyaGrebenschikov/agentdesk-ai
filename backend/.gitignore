@@ -43,3 +43,6 @@ coverage.xml
 .env.*
 !.env.example
 *.log
+
+# JWT signing keys (never commit private keys)
+.certs/

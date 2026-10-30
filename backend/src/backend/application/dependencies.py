@@ -2,6 +2,7 @@ import asyncio
 
 from dishka import Provider, Scope, provide
 
+from backend.application.features.auth import TokenJWTService
 from backend.application.features.users import CreateUserHandler, GetUserHandler
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
 from backend.application.interfaces.database.repositories import IUsersRepository
@@ -9,9 +10,10 @@ from backend.application.interfaces.database.transaction_manager import (
     ITransactionManager,
 )
 from backend.application.interfaces.pwd_hasher import IPwdHasher
+from backend.application.interfaces.token_jwt import ITokenJWTService
 from backend.application.limiters import PwdHashLimiter
 from backend.application.services.health import HealthCheckService
-from backend.core.settings import PwdHashSettings
+from backend.core.settings import JWTSettings, PwdHashSettings
 
 
 class UserFeaturesProvider(Provider):
@@ -53,3 +55,13 @@ class HealthCheckProvider(Provider):
         db_checker: IDatabaseHealthChecker,
     ) -> HealthCheckService:
         return HealthCheckService(db_checker)
+
+
+class AuthFeaturesProvider(Provider):
+    def __init__(self, settings: JWTSettings) -> None:
+        super().__init__()
+        self._settings = settings
+
+    @provide(scope=Scope.APP)
+    def token_jwt_service(self) -> ITokenJWTService:
+        return TokenJWTService(self._settings)

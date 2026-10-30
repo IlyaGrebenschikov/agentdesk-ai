@@ -16,6 +16,7 @@ from backend.core.ioc import get_ioc_providers
 from backend.core.settings import (
     CorsSettings,
     DatabaseSettings,
+    JWTSettings,
     PwdHashSettings,
     ServerSettings,
     Settings,
@@ -49,6 +50,7 @@ def settings() -> Settings:
         server=ServerSettings(_env_file=None),
         cors=CorsSettings(_env_file=None, origins=["*"]),
         pwd_hash=PwdHashSettings(_env_file=None),
+        jwt=JWTSettings(_env_file=None),
     )
 
 
