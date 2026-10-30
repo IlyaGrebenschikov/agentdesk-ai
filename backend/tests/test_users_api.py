@@ -1,9 +1,17 @@
 from uuid import UUID, uuid4
 
 import pytest
+from dishka import AsyncContainer
 from httpx import AsyncClient
 
+from backend.application.interfaces.services.token_jwt import ITokenJWTService
+
 USERS_URL = "/api/v1/users"
+
+
+async def create_access_token(container: AsyncContainer, user_id: UUID) -> str:
+    token_service = await container.get(ITokenJWTService)
+    return token_service.create_token_pair(user_id).access_token
 
 
 async def create_user(
@@ -97,26 +105,33 @@ async def test_create_user_rejects_weak_password(
     assert expected_message in response.text
 
 
-async def test_get_user_returns_user_by_id(api_client: AsyncClient) -> None:
+async def test_get_current_user_returns_authenticated_user(
+    api_client: AsyncClient,
+    container: AsyncContainer,
+) -> None:
     created = await create_user(api_client)
+    access_token = await create_access_token(container, UUID(created["id"]))
 
-    response = await api_client.get(f"{USERS_URL}/{created['id']}")
+    response = await api_client.get(
+        f"{USERS_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
 
     assert response.status_code == 200
     assert response.json() == created
     assert "password_hash" not in response.json()
 
 
-async def test_get_user_returns_404_for_missing_user(
+async def test_get_current_user_returns_404_for_missing_user(
     api_client: AsyncClient,
+    container: AsyncContainer,
 ) -> None:
-    response = await api_client.get(f"{USERS_URL}/{uuid4()}")
+    access_token = await create_access_token(container, uuid4())
+
+    response = await api_client.get(
+        f"{USERS_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
 
     assert response.status_code == 404
     assert response.json() == {"message": "User not found"}
-
-
-async def test_get_user_rejects_invalid_uuid(api_client: AsyncClient) -> None:
-    response = await api_client.get(f"{USERS_URL}/not-a-uuid")
-
-    assert response.status_code == 422

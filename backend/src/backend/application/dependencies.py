@@ -2,16 +2,26 @@ import asyncio
 
 from dishka import Provider, Scope, provide
 
+from backend.application.features.auth import (
+    LoginHandler,
+    LogoutHandler,
+    RefreshHandler,
+    TokenJWTService,
+)
 from backend.application.features.users import CreateUserHandler, GetUserHandler
+from backend.application.interfaces.cache.repositories import (
+    IRefreshTokenRepository,
+)
 from backend.application.interfaces.database.health import IDatabaseHealthChecker
 from backend.application.interfaces.database.repositories import IUsersRepository
 from backend.application.interfaces.database.transaction_manager import (
     ITransactionManager,
 )
 from backend.application.interfaces.pwd_hasher import IPwdHasher
+from backend.application.interfaces.services.token_jwt import ITokenJWTService
 from backend.application.limiters import PwdHashLimiter
 from backend.application.services.health import HealthCheckService
-from backend.core.settings import PwdHashSettings
+from backend.core.settings import JWTSettings, PwdHashSettings
 
 
 class UserFeaturesProvider(Provider):
@@ -53,3 +63,54 @@ class HealthCheckProvider(Provider):
         db_checker: IDatabaseHealthChecker,
     ) -> HealthCheckService:
         return HealthCheckService(db_checker)
+
+
+class AuthFeaturesProvider(Provider):
+    def __init__(self, settings: JWTSettings) -> None:
+        super().__init__()
+        self._settings = settings
+
+    @provide(scope=Scope.APP)
+    def token_jwt_service(self) -> ITokenJWTService:
+        return TokenJWTService(self._settings)
+
+    @provide(scope=Scope.REQUEST)
+    def login_handler(
+        self,
+        users_repository: IUsersRepository,
+        pwd_hasher: IPwdHasher,
+        pwd_hash_limiter: PwdHashLimiter,
+        token_service: ITokenJWTService,
+        refresh_token_repository: IRefreshTokenRepository,
+        transaction_manager: ITransactionManager,
+    ) -> LoginHandler:
+        return LoginHandler(
+            users_repository,
+            pwd_hasher,
+            pwd_hash_limiter,
+            token_service,
+            refresh_token_repository,
+            transaction_manager,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def logout_handler(
+        self,
+        refresh_token_repository: IRefreshTokenRepository,
+    ) -> LogoutHandler:
+        return LogoutHandler(refresh_token_repository)
+
+    @provide(scope=Scope.REQUEST)
+    def refresh_handler(
+        self,
+        users_repository: IUsersRepository,
+        refresh_token_repository: IRefreshTokenRepository,
+        token_service: ITokenJWTService,
+        transaction_manager: ITransactionManager,
+    ) -> RefreshHandler:
+        return RefreshHandler(
+            users_repository,
+            refresh_token_repository,
+            token_service,
+            transaction_manager,
+        )

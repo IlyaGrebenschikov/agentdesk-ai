@@ -6,7 +6,7 @@ AgentDesk is an open-source, low-code platform for building AI workflows visuall
 
 Unlike tools focused primarily on workflow construction, AgentDesk puts **debuggability and execution observability at the center of the developer experience**.
 
-> **Status:** Early development. The frontend prototype is available, while backend execution, integrations, and other platform capabilities are being developed.
+> **Status:** Early development. The backend foundation is in place: configuration, PostgreSQL migrations, Redis, and email/password authentication with access and refresh tokens. Workflow execution and integrations are still being developed, so the frontend uses mock workflow data in the default `hybrid` mode.
 
 ## The Problem
 
@@ -116,11 +116,95 @@ The platform will translate runtime events into its own trace representation, in
 
 This creates a consistent debugging experience even as the underlying execution framework evolves.
 
+## Getting Started
+
+### Run the full stack with Docker
+
+JWT signing keys are not committed. Generate them once from the repository root:
+
+```bash
+mkdir -p backend/.certs
+openssl genrsa -out backend/.certs/jwt-private.pem 2048
+openssl rsa -in backend/.certs/jwt-private.pem -pubout -out backend/.certs/jwt-public.pem
+chmod 600 backend/.certs/jwt-private.pem
+```
+
+Start the stack:
+
+```bash
+docker compose up --build
+```
+
+| Service | URL |
+| --- | --- |
+| Frontend | http://localhost:5173 |
+| API | http://localhost:8080 |
+| API docs | http://localhost:8080/docs |
+| Health check | http://localhost:8080/api/v1/health/ready |
+| PostgreSQL | `127.0.0.1:5432` |
+| Redis | `127.0.0.1:6379` |
+
+The one-shot `migrate` service applies Alembic migrations before the API starts. Run `docker compose up --build` again after changing Dockerfiles, `pyproject.toml`, or `uv.lock`; otherwise Compose reuses the previous image.
+
+PostgreSQL and Redis are available on localhost through `socat` port forwarders, so local tools can connect with the default credentials (`agentdesk` / `agentdesk`).
+
+### Frontend modes
+
+The frontend supports three modes via `VITE_API_MODE`:
+
+- `hybrid` (default) — authentication goes to the real FastAPI backend; workflow, execution, and tool data still comes from the local mock because those endpoints do not exist yet.
+- `api` — everything goes through FastAPI. Use it once workflow and execution routes are implemented.
+- `mock` — fully local demo with seeded data and the `demo@agentdesk.dev` / `demo1234` account.
+
+### Local development
+
+Backend (from `backend/`):
+
+```bash
+uv sync
+uv run alembic upgrade head
+uv run backend
+```
+
+Frontend (from `frontend/`):
+
+```bash
+npm install
+npm run dev
+```
+
+### Checks
+
+```bash
+# backend
+uv run pytest
+uv run ruff check src tests
+uv run mypy src tests
+
+# frontend
+npm run typecheck
+npm run build
+```
+
+## Implemented API
+
+### Authentication
+
+- `POST /api/v1/users` — register a user.
+- `POST /api/v1/auth/login/email` — log in and receive an access/refresh token pair.
+- `POST /api/v1/auth/refresh` — rotate the refresh token and issue a new pair.
+- `POST /api/v1/auth/logout` — revoke the refresh token.
+- `GET /api/v1/users/` — return the current user from the access token.
+
+Passwords are hashed with Argon2id. Tokens are RS256 JWTs; refresh token IDs are stored in Redis so they can be rotated and revoked. Access and refresh lifetimes are configured with `JWT_ACCESS_EXPIRATION_MINUTES` and `JWT_REFRESH_EXPIRATION_MINUTES`.
+
+Workflow, execution, and tool endpoints are not implemented yet. The frontend keeps using mock data for them.
+
 ## Development Roadmap
 
 The project is being developed incrementally.
 
-- [ ] **Foundation:** project structure, configuration, database migrations, and authentication.
+- [x] **Foundation:** project structure, configuration, database migrations, and authentication.
 - [ ] **Workflow editor:** node creation, connections, configuration panels, and graph validation.
 - [ ] **Workflow persistence:** save workflows and immutable published versions.
 - [ ] **Execution runtime:** integrate LangGraph and execute supported node types.

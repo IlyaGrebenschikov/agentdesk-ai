@@ -3,7 +3,7 @@ import {
   Activity, ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, GitBranch,
   KeyRound, LockKeyhole, Mail, Network, ShieldCheck, Sparkles, UserRound, Workflow, XCircle,
 } from 'lucide-react';
-import { authApi, type AuthSession } from '../api/auth';
+import { authApi, usesBackendAuth, type AuthSession } from '../api/auth';
 
 type AuthMode = 'signin' | 'signup' | 'reset';
 type Props = { onAuthenticated: (session: AuthSession) => void };
@@ -11,9 +11,9 @@ type Props = { onAuthenticated: (session: AuthSession) => void };
 export default function AuthScreen({ onAuthenticated }: Props) {
   const [mode, setMode] = useState<AuthMode>('signin');
   const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('demo@agentdesk.dev');
-  const [password, setPassword] = useState('demo1234');
-  const [confirmPassword, setConfirmPassword] = useState('demo1234');
+  const [email, setEmail] = useState(usesBackendAuth ? '' : 'demo@agentdesk.dev');
+  const [password, setPassword] = useState(usesBackendAuth ? '' : 'demo1234');
+  const [confirmPassword, setConfirmPassword] = useState(usesBackendAuth ? '' : 'demo1234');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -126,7 +126,7 @@ export default function AuthScreen({ onAuthenticated }: Props) {
             <button type="submit" className="auth-submit" disabled={busy}>{busy ? <span className="auth-spinner" /> : isReset ? <Mail size={17} /> : isSignUp ? <ArrowRight size={17} /> : <LockKeyhole size={16} />}<span>{busy ? (isReset ? 'Sending request…' : 'Please wait…') : isReset ? 'Send reset link' : isSignUp ? 'Create account' : 'Sign in to AgentDesk'}</span><ArrowRight className="auth-submit-arrow" size={16} /></button>
           </form>
 
-          {mode === 'signin' && <div className="auth-demo-box"><div className="auth-demo-symbol"><Sparkles size={17} /></div><div><strong>Try the interactive demo</strong><p>Use the pre-filled credentials to explore the workflow builder.</p><div className="auth-demo-creds"><span>demo@agentdesk.dev</span><code>demo1234</code></div></div><button type="button" onClick={() => { setEmail('demo@agentdesk.dev'); setPassword('demo1234'); setError(''); }} aria-label="Use demo credentials"><ArrowRight size={16} /></button></div>}
+          {mode === 'signin' && !usesBackendAuth && <div className="auth-demo-box"><div className="auth-demo-symbol"><Sparkles size={17} /></div><div><strong>Try the interactive demo</strong><p>Use the pre-filled credentials to explore the workflow builder.</p><div className="auth-demo-creds"><span>demo@agentdesk.dev</span><code>demo1234</code></div></div><button type="button" onClick={() => { setEmail('demo@agentdesk.dev'); setPassword('demo1234'); setError(''); }} aria-label="Use demo credentials"><ArrowRight size={16} /></button></div>}
 
           {isReset && <button type="button" className="auth-back-button" onClick={() => changeMode('signin')}><ArrowLeft size={15} /> Back to sign in</button>}
           <div className="auth-terms">By continuing, you agree to our <button type="button" onClick={() => setNotice('Terms of service are a demo placeholder for this MVP.')}>Terms of Service</button> and <button type="button" onClick={() => setNotice('Privacy policy is a demo placeholder for this MVP.')}>Privacy Policy</button>.</div>

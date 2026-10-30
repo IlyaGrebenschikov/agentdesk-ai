@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, status
 
@@ -9,7 +7,12 @@ from backend.application.features.users import (
     GetUserHandler,
     GetUserQuery,
 )
-from backend.presentation.api.docs import ConflictErrorResponse, NotFoundErrorResponse
+from backend.presentation.api.dependencies import CurrentUserId
+from backend.presentation.api.docs import (
+    ConflictErrorResponse,
+    NotFoundErrorResponse,
+    UnAuthorizedErrorResponse,
+)
 from backend.presentation.api.dto.user import CreateUserDTO, UserResponseDTO
 
 users_router = APIRouter(prefix="/users", tags=["users"], route_class=DishkaRoute)
@@ -36,16 +39,19 @@ async def create_user(
 
 
 @users_router.get(
-    "/{user_id}",
+    "/",
     response_model=UserResponseDTO,
     responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": UnAuthorizedErrorResponse,
+        },
         status.HTTP_404_NOT_FOUND: {
             "model": NotFoundErrorResponse,
         },
     },
 )
 async def get_user(
-    user_id: UUID,
+    user_id: CurrentUserId,
     handler: FromDishka[GetUserHandler],
 ) -> UserResponseDTO:
     user = await handler.execute(GetUserQuery(user_id=user_id))

@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
 
-from dishka.integrations.fastapi import FromDishka
-
 from backend.application.exceptions import NotFoundError
 from backend.application.interfaces.database.repositories.users import IUsersRepository
 from backend.domain import User
@@ -16,7 +14,7 @@ class GetUserQuery:
 class GetUserHandler:
     def __init__(
         self,
-        users_repository: FromDishka[IUsersRepository],
+        users_repository: IUsersRepository,
     ) -> None:
         self._users_repository = users_repository
 

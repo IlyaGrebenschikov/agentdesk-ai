@@ -2,8 +2,6 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 
-from dishka.integrations.fastapi import FromDishka
-
 from backend.application.exceptions import ConflictError
 from backend.application.interfaces.database.repositories.users import (
     IUsersRepository,
@@ -28,10 +26,10 @@ class CreateUserCMD:
 class CreateUserHandler:
     def __init__(
         self,
-        transaction_manager: FromDishka[ITransactionManager],
-        users_repository: FromDishka[IUsersRepository],
-        pwd_hasher: FromDishka[IPwdHasher],
-        pwd_hash_limiter: FromDishka[PwdHashLimiter],
+        transaction_manager: ITransactionManager,
+        users_repository: IUsersRepository,
+        pwd_hasher: IPwdHasher,
+        pwd_hash_limiter: PwdHashLimiter,
     ) -> None:
         self._transaction_manager = transaction_manager
         self._users_repository = users_repository

@@ -13,7 +13,7 @@ Frontend MVP для AgentDesk — low-code редактора AI-workflow с у�
 - Страница Runs & traces, каталог инструментов, шаблоны и базовые настройки.
 - Демонстрационный неуспешный запуск с ошибкой `TOOL_TIMEOUT`, чтобы отладчик был полезен при первом открытии.
 - Mock API с сохранением данных в `localStorage`.
-- Полные mock-backed auth flows: вход, регистрация, выход, восстановление пароля, демонстрационный аккаунт и сохранение сессии.
+- Auth flows: в `hybrid`/`api` — реальные login, регистрация через `POST /users`, refresh и logout с backend-токенами; в `mock` — демонстрационный аккаунт и локальная сессия.
 - Плавные переходы графа между программными позициями, отдельный стиль перетаскивания без задержки за курсором, плавные состояния узлов и соединений.
 - Отдельные HTTP API adapters для подключения FastAPI без переписывания компонентов.
 
@@ -41,23 +41,22 @@ npm run preview
 
 ## Режимы работы
 
-По умолчанию приложение запускается в `mock`-режиме и не требует backend.
+По умолчанию используется `hybrid`: авторизация идёт в реальный FastAPI, а workflow/execution/tools-данные пока берутся из mock, потому что соответствующих backend-ручек ещё нет.
 
 ```env
-VITE_API_MODE=mock
+VITE_API_MODE=hybrid
 VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
-Для обращения к FastAPI переключи режим:
+Режимы:
 
-```env
-VITE_API_MODE=api
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-```
+- `hybrid` (по умолчанию) — реальные login, регистрация, refresh и logout через FastAPI; остальные данные из mock.
+- `api` — все данные через FastAPI. Используй, когда workflow/execution/tools-ручки появятся на backend; сейчас такие страницы будут получать 404.
+- `mock` — полностью локальный режим с демо-аккаунтом `demo@agentdesk.dev` / `demo1234`.
 
-После изменения `.env` перезапусти Vite. В UI режим виден в верхней панели как `DEMO MODE` или `API MODE`.
+После изменения `.env` перезапусти Vite. В UI режим виден в верхней панели как `API + DEMO`, `API MODE` или `DEMO MODE`.
 
-Демо-учётные записи и сессия хранятся локально в браузере. По умолчанию вход доступен с `demo@agentdesk.dev` / `demo1234`. Регистрация создаёт отдельного mock-пользователя; восстановление пароля имитируется и не отправляет письмо. Это только frontend-заглушки, не production-аутентификация. Чтобы полностью сбросить демо-состояние, открой DevTools → Application → Local Storage и Session Storage и удали ключи:
+В `mock`-режиме демо-учётные записи и сессия хранятся локально в браузере; вход доступен с `demo@agentdesk.dev` / `demo1234`. В `hybrid` и `api` пользователи и сессия приходят из backend, поэтому демо-аккаунт не используется и поля входа пустые. Восстановление пароля пока имитируется во всех режимах и не отправляет письмо. Чтобы полностью сбросить демо-состояние, открой DevTools → Application → Local Storage и Session Storage и удали ключи:
 
 - `agentdesk.mock.workflows.v1`
 - `agentdesk.mock.traces.v1`
@@ -86,7 +85,7 @@ src/
 
 ### Где подключать backend
 
-Основная точка подключения данных workflow — `src/api/client.ts`. Все страницы обращаются к интерфейсу `AgentDeskApi` и не используют `fetch` напрямую. В mock-режиме интерфейс реализует `mockApi` из `src/api/mock.ts`; в режиме `api` — `httpApi`. Авторизация вынесена отдельно в `src/api/auth.ts`, поэтому login/register и основной API можно адаптировать независимо. Access token автоматически добавляется в Bearer-заголовок запросов основного API.
+Основная точка подключения данных workflow — `src/api/client.ts`. Все страницы обращаются к интерфейсу `AgentDeskApi` и не используют `fetch` напрямую. В `mock` и `hybrid` режимах интерфейс реализует `mockApi` из `src/api/mock.ts`; в режиме `api` — `httpApi`. Авторизация вынесена отдельно в `src/api/auth.ts`, поэтому login/register и основной API можно адаптировать независимо. Access token автоматически добавляется в Bearer-заголовок запросов основного API, а при `401` выполняется refresh и повтор запроса.
 
 Если backend вернёт другой формат ответа или пути будут называться иначе, сначала измени только `httpApi` и функции `toApiGraph` / `fromApiGraph` в `client.ts`. Старайся не добавлять `fetch` в React-компоненты.
 
@@ -94,14 +93,19 @@ src/
 
 ### Авторизация: контракт для FastAPI
 
-В `VITE_API_MODE=api` фронтенд ожидает следующие ручки (пути можно поменять только в `src/api/auth.ts`):
+В режимах `hybrid` и `api` фронтенд использует следующие ручки (пути заданы в `src/api/auth.ts`):
 
-- `POST /auth/login` — `{ email, password }`
-- `POST /auth/register` — `{ full_name, email, password }`
-- `POST /auth/forgot-password` — `{ email }`
-- `POST /auth/logout` — текущая сессия; ошибка logout не блокирует локальный выход
+- `POST /auth/login/email` — `{ email, password }`; возвращает `{ access_token, refresh_token, token_type }`.
+- `GET /users/` — текущий пользователь; вызывается после login, чтобы получить `id` и `email` для сессии.
+- `POST /users` — регистрация, `{ email, password }`; после успешного создания выполняется login тем же email и паролем.
+- `POST /auth/refresh` — обновление пары токенов; refresh token передаётся в `Authorization: Bearer <refresh_token>`.
+- `POST /auth/logout` — завершение сессии; refresh token передаётся в `Authorization: Bearer <refresh_token>`. Ошибка logout не блокирует локальный выход.
 
-Для login/register ожидается JSON с `access_token` и `user` (`id`, `email`, `full_name`, `role`, опционально `avatar_url`). Также поддерживается envelope `{ data: { access_token, user } }`. Для другого формата измени `normalizeSession()` в `src/api/auth.ts`. Сессия сохраняется в Local Storage при включённом Remember me, иначе — в Session Storage. В mock-режиме начальный аккаунт: `demo@agentdesk.dev` / `demo1234`.
+`POST /auth/forgot-password` пока не имеет backend-ручки, поэтому восстановление пароля остаётся локальной имитацией во всех режимах.
+
+Login и refresh возвращают пару токенов без объекта пользователя. `AuthSession.user` собирается из ответа `GET /users/`; backend отдаёт только `id` и `email`, поэтому `full_name` выводится из локальной части email. Также поддерживается envelope `{ data: { ... } }` и объект `user` в ответе — см. `normalizeSession()` в `src/api/auth.ts`.
+
+При `401` от основного API выполняется один общий refresh-запрос (`POST /auth/refresh`), после чего исходный запрос повторяется один раз. Если refresh не удался, сохранённая сессия очищается. Сессия сохраняется в Local Storage при включённом Remember me, иначе — в Session Storage. В mock-режиме начальный аккаунт: `demo@agentdesk.dev` / `demo1234`.
 
 **Важно:** пароль в mock-режиме сохраняется в Local Storage только для локальной демонстрации. Это не реальная защита и не должно переноситься в production. В реальном backend хранение паролей, хэширование и выдача токенов должны выполняться на сервере.
 

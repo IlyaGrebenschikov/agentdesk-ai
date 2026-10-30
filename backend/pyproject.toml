@@ -16,6 +16,8 @@ dependencies = [
     "mypy>=2.4.0",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.16.1",
+    "pyjwt[crypto]>=2.15.1",
+    "redis>=8.1.0",
     "ruff>=0.17.3",
     "sqlalchemy[asyncio]>=2.1.6",
     "uvicorn>=0.54.0",
@@ -45,3 +47,6 @@ addopts = "-ra"
 [tool.ruff.lint.isort]
 # Relative imports belong to our own code, so don't separate them from first-party imports.
 no-lines-before = ["local-folder"]
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]

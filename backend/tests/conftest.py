@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 import pytest
 from dishka import AsyncContainer, make_async_container
@@ -14,8 +15,10 @@ from sqlalchemy.pool import StaticPool
 
 from backend.core.ioc import get_ioc_providers
 from backend.core.settings import (
+    CacheSettings,
     CorsSettings,
     DatabaseSettings,
+    JWTSettings,
     PwdHashSettings,
     ServerSettings,
     Settings,
@@ -26,7 +29,10 @@ from backend.presentation.api import init_api
 from tests.fakes import (
     FakeDatabaseHealthChecker,
     FakeDatabaseHealthCheckerProvider,
+    FakeRefreshTokenRepository,
+    FakeRefreshTokenRepositoryProvider,
     SqliteSessionProvider,
+    write_jwt_key_pair,
 )
 
 
@@ -36,7 +42,19 @@ def fake_db_checker() -> FakeDatabaseHealthChecker:
 
 
 @pytest.fixture
-def settings() -> Settings:
+def fake_refresh_token_repository() -> FakeRefreshTokenRepository:
+    return FakeRefreshTokenRepository()
+
+
+@pytest.fixture(scope="session")
+def jwt_certs_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    directory = tmp_path_factory.mktemp("jwt-certs")
+    write_jwt_key_pair(directory)
+    return directory
+
+
+@pytest.fixture
+def settings(jwt_certs_dir: Path) -> Settings:
     return Settings(
         database=DatabaseSettings(
             _env_file=None,
@@ -48,19 +66,23 @@ def settings() -> Settings:
         ),
         server=ServerSettings(_env_file=None),
         cors=CorsSettings(_env_file=None, origins=["*"]),
+        cache=CacheSettings(_env_file=None, host="localhost", port=6379),
         pwd_hash=PwdHashSettings(_env_file=None),
+        jwt=JWTSettings(_env_file=None, certs_dir=jwt_certs_dir),
     )
 
 
 @pytest.fixture
 async def container(
     fake_db_checker: FakeDatabaseHealthChecker,
+    fake_refresh_token_repository: FakeRefreshTokenRepository,
     settings: Settings,
     sqlite_session_provider: SqliteSessionProvider,
 ) -> AsyncIterator[AsyncContainer]:
     container = make_async_container(
         *get_ioc_providers(settings),
         FakeDatabaseHealthCheckerProvider(fake_db_checker),
+        FakeRefreshTokenRepositoryProvider(fake_refresh_token_repository),
         sqlite_session_provider,
     )
 
