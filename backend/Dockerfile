@@ -26,4 +26,4 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8080
 
-CMD ["uv", "run", "backend"]
+CMD ["uv", "run", "--frozen", "--no-dev", "backend"]

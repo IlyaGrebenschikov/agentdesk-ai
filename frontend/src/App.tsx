@@ -467,8 +467,16 @@ function AppInner() {
     : apiHealth === 'unhealthy'
       ? { label: 'API UNAVAILABLE', footer: 'API unavailable', tone: 'unhealthy' }
       : { label: 'CHECKING API', footer: 'Checking API…', tone: 'checking' };
-  const environmentStatus = apiMode === 'DEMO' ? { label: 'DEMO MODE', tone: 'demo' } : healthStatus;
-  const footerStatus = apiMode === 'DEMO' ? `Demo data · ${healthStatus.footer}` : healthStatus.footer;
+  const environmentStatus = apiMode === 'DEMO'
+    ? { label: 'DEMO MODE', tone: 'demo' }
+    : apiMode === 'HYBRID'
+      ? { label: 'API + DEMO', tone: 'demo' }
+      : healthStatus;
+  const footerStatus = apiMode === 'DEMO'
+    ? `Demo data · ${healthStatus.footer}`
+    : apiMode === 'HYBRID'
+      ? `Auth: API · Workflows: demo · ${healthStatus.footer}`
+      : healthStatus.footer;
 
   if (!authSession) return <AuthScreen onAuthenticated={handleAuthenticated} />;
 

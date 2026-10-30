@@ -15,7 +15,7 @@ CMD ["npm", "run", "dev"]
 
 FROM base AS build
 
-ARG VITE_API_MODE=mock
+ARG VITE_API_MODE=hybrid
 ARG VITE_API_BASE_URL=http://localhost:8080/api/v1
 ENV VITE_API_MODE=${VITE_API_MODE} \
     VITE_API_BASE_URL=${VITE_API_BASE_URL}

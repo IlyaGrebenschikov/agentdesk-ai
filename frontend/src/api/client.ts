@@ -4,10 +4,11 @@ import type {
   WorkflowNode, WorkflowSummary,
 } from './types';
 import { mockApi } from './mock';
-import { getAccessToken } from './auth';
+import { authorizedRequest } from './auth';
 import { createSeedGraph } from './seed';
 
-const mode = import.meta.env.VITE_API_MODE ?? 'mock';
+// hybrid — real auth backend + mock workflow/execution data; api — full backend; mock — local only.
+const mode = import.meta.env.VITE_API_MODE ?? 'hybrid';
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1').replace(/\/$/, '');
 
 export async function checkApiReadiness(signal?: AbortSignal): Promise<boolean> {
@@ -22,22 +23,8 @@ export async function checkApiReadiness(signal?: AbortSignal): Promise<boolean> 
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = getAccessToken();
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(init.headers ?? {}) },
-  });
-  if (!response.ok) {
-    let message = `${response.status} ${response.statusText}`;
-    try {
-      const body = await response.json() as { detail?: string; message?: string };
-      message = body.detail ?? body.message ?? message;
-    } catch { /* response body was not JSON */ }
-    throw new Error(message);
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return authorizedRequest<T>(path, init);
 }
 
 // Backend graph DTO intentionally differs from React Flow's UI model. This keeps
@@ -129,4 +116,4 @@ const httpApi: AgentDeskApi = {
 };
 
 export const api: AgentDeskApi = mode === 'api' ? httpApi : mockApi;
-export const apiMode = mode === 'api' ? 'API' : 'DEMO';
+export const apiMode = mode === 'api' ? 'API' : mode === 'hybrid' ? 'HYBRID' : 'DEMO';
