@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 import jwt
 
 from backend.application.exceptions.common import UnAuthorizedError
-from backend.application.interfaces.token_jwt import (
+from backend.application.interfaces.services.token_jwt import (
     AccessTokenClaims,
     ITokenJWTService,
     RefreshTokenClaims,

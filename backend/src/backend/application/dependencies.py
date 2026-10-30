@@ -10,7 +10,7 @@ from backend.application.interfaces.database.transaction_manager import (
     ITransactionManager,
 )
 from backend.application.interfaces.pwd_hasher import IPwdHasher
-from backend.application.interfaces.token_jwt import ITokenJWTService
+from backend.application.interfaces.services.token_jwt import ITokenJWTService
 from backend.application.limiters import PwdHashLimiter
 from backend.application.services.health import HealthCheckService
 from backend.core.settings import JWTSettings, PwdHashSettings

@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from backend.application.exceptions import UnAuthorizedError
 from backend.application.features.auth import TokenJWTService
-from backend.application.interfaces.token_jwt import ITokenJWTService
+from backend.application.interfaces.services.token_jwt import ITokenJWTService
 from backend.core.settings import JWTSettings
 
 
