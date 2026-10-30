@@ -28,6 +28,8 @@ from backend.presentation.api import init_api
 from tests.fakes import (
     FakeDatabaseHealthChecker,
     FakeDatabaseHealthCheckerProvider,
+    FakeRefreshTokenRepository,
+    FakeRefreshTokenRepositoryProvider,
     SqliteSessionProvider,
 )
 
@@ -35,6 +37,11 @@ from tests.fakes import (
 @pytest.fixture
 def fake_db_checker() -> FakeDatabaseHealthChecker:
     return FakeDatabaseHealthChecker()
+
+
+@pytest.fixture
+def fake_refresh_token_repository() -> FakeRefreshTokenRepository:
+    return FakeRefreshTokenRepository()
 
 
 @pytest.fixture
@@ -59,12 +66,14 @@ def settings() -> Settings:
 @pytest.fixture
 async def container(
     fake_db_checker: FakeDatabaseHealthChecker,
+    fake_refresh_token_repository: FakeRefreshTokenRepository,
     settings: Settings,
     sqlite_session_provider: SqliteSessionProvider,
 ) -> AsyncIterator[AsyncContainer]:
     container = make_async_container(
         *get_ioc_providers(settings),
         FakeDatabaseHealthCheckerProvider(fake_db_checker),
+        FakeRefreshTokenRepositoryProvider(fake_refresh_token_repository),
         sqlite_session_provider,
     )
 
