@@ -8,7 +8,7 @@ from .handlers import setup_cors_middleware, setup_exception_handlers
 
 
 def init_api(settings: Settings, di_container: AsyncContainer) -> FastAPI:
-    app = FastAPI(title="AgentDesk API")
+    app = FastAPI(title="DayWave API")
     setup_exception_handlers(app)
     setup_cors_middleware(app, settings.cors)
     setup_controllers(app)

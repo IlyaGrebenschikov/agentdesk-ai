@@ -1,4 +1,4 @@
-name: agentdesk
+name: daywave
 
 # Optional: reuse values from backend/.env:
 #   docker compose --env-file backend/.env up --build
@@ -7,25 +7,25 @@ name: agentdesk
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: agentdesk-postgres
+    container_name: daywave-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-agentdesk}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentdesk}
-      POSTGRES_DB: ${DB_DATABASE:-agentdesk}
+      POSTGRES_USER: ${DB_USERNAME:-daywave}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-daywave}
+      POSTGRES_DB: ${DB_DATABASE:-daywave}
     volumes:
-      - agentdesk-postgres-data:/var/lib/postgresql/data
+      - daywave-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
     networks:
-      - agentdesk-db-network
+      - daywave-db-network
 
   postgres-port-forwarder:
     image: alpine/socat:latest
-    container_name: agentdesk-postgres-port-forwarder
+    container_name: daywave-postgres-port-forwarder
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
@@ -33,51 +33,51 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - agentdesk-db-network
+      - daywave-db-network
     command: ["tcp-listen:5432,fork,reuseaddr", "tcp-connect:postgres:5432"]
 
   migrate:
-    container_name: agentdesk-migrate
+    container_name: daywave-migrate
     build:
       context: ./backend
       dockerfile: Dockerfile
     command: ["uv", "run", "--frozen", "--no-dev", "alembic", "upgrade", "head"]
     volumes:
-      - ./backend/src:/usr/agentdesk/backend/src
+      - ./backend/src:/usr/daywave/backend/src
     environment:
       DB_HOST: postgres
       DB_PORT: ${DB_PORT:-5432}
-      DB_USERNAME: ${DB_USERNAME:-agentdesk}
-      DB_PASSWORD: ${DB_PASSWORD:-agentdesk}
-      DB_DATABASE: ${DB_DATABASE:-agentdesk}
+      DB_USERNAME: ${DB_USERNAME:-daywave}
+      DB_PASSWORD: ${DB_PASSWORD:-daywave}
+      DB_DATABASE: ${DB_DATABASE:-daywave}
       DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - agentdesk-db-network
+      - daywave-db-network
     restart: "no"
 
   redis:
     image: redis:7-alpine
-    container_name: agentdesk-redis
+    container_name: daywave-redis
     restart: unless-stopped
-    command: ["redis-server", "--requirepass", "${CACHE_PASSWORD:-agentdesk}"]
+    command: ["redis-server", "--requirepass", "${CACHE_PASSWORD:-daywave}"]
     environment:
-      CACHE_PASSWORD: ${CACHE_PASSWORD:-agentdesk}
+      CACHE_PASSWORD: ${CACHE_PASSWORD:-daywave}
     volumes:
-      - agentdesk-redis-data:/data
+      - daywave-redis-data:/data
     healthcheck:
       test: ["CMD-SHELL", "REDISCLI_AUTH=$$CACHE_PASSWORD redis-cli ping"]
       interval: 5s
       timeout: 3s
       retries: 5
     networks:
-      - agentdesk-cache-network
+      - daywave-cache-network
 
   redis-port-forwarder:
     image: alpine/socat:latest
-    container_name: agentdesk-redis-port-forwarder
+    container_name: daywave-redis-port-forwarder
     restart: unless-stopped
     ports:
       - "127.0.0.1:6379:6379"
@@ -85,11 +85,11 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - agentdesk-cache-network
+      - daywave-cache-network
     command: ["tcp-listen:6379,fork,reuseaddr", "tcp-connect:redis:6379"]
 
   api:
-    container_name: agentdesk-api
+    container_name: daywave-api
     restart: unless-stopped
     build:
       context: ./backend
@@ -97,19 +97,19 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./backend/src:/usr/agentdesk/backend/src
-      - ./backend/.certs:/usr/agentdesk/backend/.certs:ro
+      - ./backend/src:/usr/daywave/backend/src
+      - ./backend/.certs:/usr/daywave/backend/.certs:ro
     environment:
       DB_HOST: postgres
       DB_PORT: ${DB_PORT:-5432}
-      DB_USERNAME: ${DB_USERNAME:-agentdesk}
-      DB_PASSWORD: ${DB_PASSWORD:-agentdesk}
-      DB_DATABASE: ${DB_DATABASE:-agentdesk}
+      DB_USERNAME: ${DB_USERNAME:-daywave}
+      DB_PASSWORD: ${DB_PASSWORD:-daywave}
+      DB_DATABASE: ${DB_DATABASE:-daywave}
       DB_DRIVERNAME: ${DB_DRIVERNAME:-postgresql+asyncpg}
       DB_HEALTH_CHECK_TIMEOUT: ${DB_HEALTH_CHECK_TIMEOUT:-5}
       CACHE_HOST: redis
       CACHE_PORT: ${CACHE_PORT:-6379}
-      CACHE_PASSWORD: ${CACHE_PASSWORD:-agentdesk}
+      CACHE_PASSWORD: ${CACHE_PASSWORD:-daywave}
       PWD_HASH_MAX_THREADS: ${PWD_HASH_MAX_THREADS:-4}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-RS256}
       JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES:-30}
@@ -136,12 +136,12 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - agentdesk-network
-      - agentdesk-db-network
-      - agentdesk-cache-network
+      - daywave-network
+      - daywave-db-network
+      - daywave-cache-network
 
   frontend:
-    container_name: agentdesk-frontend
+    container_name: daywave-frontend
     restart: unless-stopped
     build:
       context: ./frontend
@@ -150,28 +150,28 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/usr/agentdesk/frontend
-      - agentdesk-frontend-node-modules:/usr/agentdesk/frontend/node_modules
+      - ./frontend:/usr/daywave/frontend
+      - daywave-frontend-node-modules:/usr/daywave/frontend/node_modules
     environment:
       VITE_API_MODE: ${VITE_API_MODE:-hybrid}
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080/api/v1}
     depends_on:
       - api
     networks:
-      - agentdesk-network
+      - daywave-network
 
 volumes:
-  agentdesk-postgres-data:
-  agentdesk-redis-data:
-  agentdesk-frontend-node-modules:
+  daywave-postgres-data:
+  daywave-redis-data:
+  daywave-frontend-node-modules:
 
 networks:
-  agentdesk-network:
-    name: agentdesk-network
+  daywave-network:
+    name: daywave-network
     driver: bridge
-  agentdesk-db-network:
-    name: agentdesk-db-network
+  daywave-db-network:
+    name: daywave-db-network
     driver: bridge
-  agentdesk-cache-network:
-    name: agentdesk-cache-network
+  daywave-cache-network:
+    name: daywave-cache-network
     driver: bridge

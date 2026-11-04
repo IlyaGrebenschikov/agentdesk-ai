@@ -1,25 +1,15 @@
 {
-  "name": "agentdesk-frontend",
+  "name": "daywave-web",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "typecheck": "tsc -b --pretty"
-  },
+  "scripts": {"dev": "vite", "build": "vite build", "preview": "vite preview"},
   "dependencies": {
-    "@xyflow/react": "^12.12.0",
-    "lucide-react": "^1.62.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.5",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0",
+    "lucide-vue-next": "^0.468.0"
   },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^6.1.2",
-    "typescript": "^5.9.3",
-    "vite": "^8.3.5"
-  }
+  "devDependencies": {}
 }

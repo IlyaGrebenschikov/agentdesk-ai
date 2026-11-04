@@ -1,11 +1,11 @@
 ---
 name: api-curl-tests
-description: Run AgentDesk API smoke tests with curl and report pass/fail results. Use when the user asks to test API endpoints, run API smoke tests, verify backend health, or exercise routes with curl.
+description: Run DayWave API smoke tests with curl and report pass/fail results. Use when the user asks to test API endpoints, run API smoke tests, verify backend health, or exercise routes with curl.
 ---
 
 # API Curl Tests
 
-Use this skill to verify the AgentDesk API with `curl` and report clear pass/fail results.
+Use this skill to verify the DayWave API with `curl` and report clear pass/fail results.
 
 ## Defaults
 
@@ -50,7 +50,7 @@ Use this skill to verify the AgentDesk API with `curl` and report clear pass/fai
      -H 'Content-Type: application/json' \
      -H "Authorization: Bearer ${AUTH_TOKEN}" \
      -d '{"name":"smoke-test"}' \
-     -o /tmp/agentdesk-response.json \
+     -o /tmp/daywave-response.json \
      -w '%{http_code}\n' \
      "${API_BASE_URL:-http://localhost:8080/api/v1}/workflows"
    ```

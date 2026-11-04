@@ -47,9 +47,9 @@ Redis stores active refresh-token JTIs. The connection is configured with:
 ```env
 CACHE_HOST=localhost
 CACHE_PORT=6379
-CACHE_PASSWORD=agentdesk
+CACHE_PASSWORD=daywave
 ```
 
 In Docker Compose the `api` service connects to the `redis` service, while
 `redis-port-forwarder` exposes Redis on `127.0.0.1:6379` for local tools. Redis
-data is persisted in the `agentdesk-redis-data` volume.
+data is persisted in the `daywave-redis-data` volume.
