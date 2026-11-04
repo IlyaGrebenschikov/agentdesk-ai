@@ -1,6 +1,6 @@
 FROM node:22-alpine AS base
 
-WORKDIR /usr/agentdesk/frontend
+WORKDIR /usr/daywave/frontend
 
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -25,6 +25,6 @@ RUN npm run build
 FROM nginx:alpine AS prod
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /usr/agentdesk/frontend/dist /usr/share/nginx/html
+COPY --from=build /usr/daywave/frontend/dist /usr/share/nginx/html
 
 EXPOSE 80

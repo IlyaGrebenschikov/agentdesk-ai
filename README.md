@@ -1,10 +1,10 @@
-# AgentDesk
+# DayWave
 
 **Build, run, and debug AI workflows — with full visibility into every step.**
 
-AgentDesk is an open-source, low-code platform for building AI workflows visually. It aims to make AI agent execution easier to understand, inspect, and debug through detailed execution traces, node-level diagnostics, and transparent run history.
+DayWave is an open-source, low-code platform for building AI workflows visually. It aims to make AI agent execution easier to understand, inspect, and debug through detailed execution traces, node-level diagnostics, and transparent run history.
 
-Unlike tools focused primarily on workflow construction, AgentDesk puts **debuggability and execution observability at the center of the developer experience**.
+Unlike tools focused primarily on workflow construction, DayWave puts **debuggability and execution observability at the center of the developer experience**.
 
 > **Status:** Early development. The backend foundation is in place: configuration, PostgreSQL migrations, Redis, and email/password authentication with access and refresh tokens. Workflow execution and integrations are still being developed, so the frontend uses mock workflow data in the default `hybrid` mode.
 
@@ -21,7 +21,7 @@ When an LLM returns an unexpected result, a tool call times out, or a workflow s
 - Can a failed step be retried without rerunning the entire workflow?
 - Can a previous execution be inspected and reproduced?
 
-AgentDesk is being designed to make these questions easy to answer.
+DayWave is being designed to make these questions easy to answer.
 
 ## Planned Features
 
@@ -49,7 +49,7 @@ AgentDesk is being designed to make these questions easy to answer.
 - Build agent workflows with tool calling.
 - Use LangGraph as the workflow execution runtime.
 - Use LangChain integrations where they simplify model and tool configuration.
-- Keep AgentDesk's workflow definitions and debugging data independent of framework-specific types.
+- Keep DayWave's workflow definitions and debugging data independent of framework-specific types.
 
 ### Background Execution
 
@@ -68,7 +68,7 @@ AgentDesk is being designed to make these questions easy to answer.
 
 ## Architecture
 
-AgentDesk is planned as a modular backend with a layered architecture and an explicit separation between application logic and infrastructure.
+DayWave is planned as a modular backend with a layered architecture and an explicit separation between application logic and infrastructure.
 
 ### Planned Technology Stack
 
@@ -103,7 +103,7 @@ Domain models are intentionally anemic: business workflows and orchestration bel
 
 ### Debugging Architecture
 
-AgentDesk's debugging model is intended to remain independent of the underlying workflow runtime.
+DayWave's debugging model is intended to remain independent of the underlying workflow runtime.
 
 The platform will translate runtime events into its own trace representation, including:
 
@@ -146,7 +146,7 @@ docker compose up --build
 
 The one-shot `migrate` service applies Alembic migrations before the API starts. Run `docker compose up --build` again after changing Dockerfiles, `pyproject.toml`, or `uv.lock`; otherwise Compose reuses the previous image.
 
-PostgreSQL and Redis are available on localhost through `socat` port forwarders, so local tools can connect with the default credentials (`agentdesk` / `agentdesk`).
+PostgreSQL and Redis are available on localhost through `socat` port forwarders, so local tools can connect with the default credentials (`daywave` / `daywave`).
 
 ### Frontend modes
 
@@ -154,7 +154,7 @@ The frontend supports three modes via `VITE_API_MODE`:
 
 - `hybrid` (default) — authentication goes to the real FastAPI backend; workflow, execution, and tool data still comes from the local mock because those endpoints do not exist yet.
 - `api` — everything goes through FastAPI. Use it once workflow and execution routes are implemented.
-- `mock` — fully local demo with seeded data and the `demo@agentdesk.dev` / `demo1234` account.
+- `mock` — fully local demo with seeded data and the `demo@daywave.dev` / `demo1234` account.
 
 ### Local development
 
@@ -220,7 +220,7 @@ The initial MVP focuses on a small set of node types and predictable execution s
 
 1. **Debuggability first.** Every execution should leave enough diagnostic information to explain what happened.
 2. **Explicit execution state.** Workflow and node state transitions should be observable and testable.
-3. **Frameworks are implementation details.** AgentDesk's public workflow and trace models should not depend on LangGraph or LangChain internals.
+3. **Frameworks are implementation details.** DayWave's public workflow and trace models should not depend on LangGraph or LangChain internals.
 4. **Reliable by design.** Retries and recovery must account for duplicate delivery and external side effects.
 5. **Security by default.** Tool permissions, execution limits, secret redaction, and tenant isolation must be considered as the platform evolves.
 

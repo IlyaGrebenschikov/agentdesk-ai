@@ -1,0 +1,14 @@
+# Node / frontend
+node_modules/
+dist/
+
+# Python / backend
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env
+.env
