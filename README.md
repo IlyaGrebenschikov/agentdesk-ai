@@ -1,120 +1,96 @@
 # DayWave
 
-**Build, run, and debug AI workflows — with full visibility into every step.**
+**Your day, connected to one personal AI assistant — with full visibility into what it does.**
 
-DayWave is an open-source, low-code platform for building AI workflows visually. It aims to make AI agent execution easier to understand, inspect, and debug through detailed execution traces, node-level diagnostics, and transparent run history.
+DayWave is an open-source personal AI assistant web application. It takes context from the services you already use, helps you plan your day, answers questions grounded in your real data, performs agreed actions on your behalf, and runs automations on a schedule.
 
-Unlike tools focused primarily on workflow construction, DayWave puts **debuggability and execution observability at the center of the developer experience**.
+The web application is the main interface and control center. Telegram is an additional channel for notifications and quick results — not the core of the product.
 
-> **Status:** Early development. The backend foundation is in place: configuration, PostgreSQL migrations, Redis, and email/password authentication with access and refresh tokens. Workflow execution and integrations are still being developed, so the frontend uses mock workflow data in the default `hybrid` mode.
+> **Status:** Early development. The foundation is in place: configuration, PostgreSQL migrations, health checks, and email/password authentication with access and refresh tokens (already integrated into the frontend). Calendar, chat, and automations are next; screens without a backend running behind them use local mock data in the default `hybrid` mode.
 
 ## The Problem
 
-Building an AI workflow is only part of the challenge. Understanding why it failed can be much harder.
+Personal context is scattered: one part of your day lives in the calendar, another in email and notes, decisions get made in messengers. Generic chatbots know nothing about any of it, so every answer starts with you retyping your plan.
 
-When an LLM returns an unexpected result, a tool call times out, or a workflow stops midway, developers need answers to questions such as:
+DayWave is built around a different flow:
 
-- Which node failed, and what caused the failure?
-- What input did the node receive, and what output did it produce?
-- How long did each step take?
-- How many tokens were consumed, and how much did the execution cost?
-- Can a failed step be retried without rerunning the entire workflow?
-- Can a previous execution be inspected and reproduced?
+- Connect your calendar and other everyday services — the assistant reads from them directly.
+- Ask about your day and get an answer based on real events, not inventations.
+- See exactly which sources were used, which tools were called, and how the execution finished.
+- Keep external actions behind an explicit confirmation, so the assistant can't move a meeting on its own.
 
-DayWave is being designed to make these questions easy to answer.
+## Core Scenarios (MVP)
 
-## Planned Features
+- Get a morning summary: today's meetings, important emails, and tasks.
+- Ask the assistant about your schedule or the contents of connected sources.
+- Find a free slot and get a meeting suggestion.
+- Receive a Telegram notification about an important event or an automation result.
+- Run a recurring workflow, e.g. the daily briefing digest.
+- Review the history of assistant actions and understand where each result came from.
 
-### Visual Workflow Builder
+### What the first MVP includes
 
-- Create workflows using a visual node-based editor.
-- Connect nodes to define execution flow.
-- Configure LLMs, tools, conditions, inputs, and outputs.
-- Validate workflow graphs before execution.
-- Save and version workflow definitions.
+- Registration, login, logout, and session management.
+- Web dashboard, chat with the AI assistant.
+- One LLM provider behind an own abstraction; one agent with a limited tool-calling loop.
+- Google Calendar via OAuth; reading calendar events and answering questions about the schedule.
+- Telegram as a delivery channel for notifications.
+- Simple scheduled automations; history of runs and tool calls.
+- Explicit confirmation before any action that changes external data.
 
-### Execution Debugger
+### What stays out of the first MVP
 
-- Inspect execution status directly on the workflow graph.
-- View the input and output of individual nodes.
-- Explore chronological execution events and logs.
-- Inspect errors, exception details, and stack traces.
-- Track node duration, token usage, and estimated LLM cost.
-- Compare successful and failed runs.
-- Retry failed steps where execution semantics allow it.
-
-### AI Integration
-
-- Integrate LLM providers through a replaceable adapter layer.
-- Build agent workflows with tool calling.
-- Use LangGraph as the workflow execution runtime.
-- Use LangChain integrations where they simplify model and tool configuration.
-- Keep DayWave's workflow definitions and debugging data independent of framework-specific types.
-
-### Background Execution
-
-- Execute workflows outside the API request lifecycle.
-- Track queued, running, completed, failed, and cancelled executions.
-- Handle timeouts, retries, and worker failures.
-- Persist execution events for post-run debugging.
-
-### Retrieval-Augmented Generation (Planned)
-
-- Connect knowledge bases to AI agents.
-- Store and search document embeddings with Qdrant.
-- Support metadata filtering and retrieval configuration.
-- Expose retrieved documents and relevant chunks in execution traces.
-- Add RAG components to the visual workflow builder.
+Visual agent/graph builders, multi-agent systems, arbitrary code execution, full email sending, RAG over arbitrary files, voice, mobile apps, marketplace, and payments. One reliable agent with a small tool set beats a do-everything Jarvis.
 
 ## Architecture
 
-DayWave is planned as a modular backend with a layered architecture and an explicit separation between application logic and infrastructure.
+DayWave is a modular monolith on FastAPI with vertical slices and explicit layer boundaries.
 
 ### Planned Technology Stack
 
 | Component | Technology |
 | --- | --- |
-| Frontend | React, TypeScript, Vite |
-| Workflow editor | React Flow (`@xyflow/react`) |
-| Backend API | FastAPI, Pydantic |
-| Application and domain models | Python dataclasses and enums |
-| Persistence | PostgreSQL, SQLAlchemy 2.x, Alembic |
-| Workflow runtime | LangGraph |
-| LLM and tool integrations | LangChain where appropriate |
-| Background messaging | RabbitMQ |
-| Cache and temporary state | Redis |
-| Vector search and RAG | Qdrant |
-| Testing | pytest, integration and failure-injection tests |
+| Frontend | Vue 3 (Composition API), Vite, Vue Router |
+| Backend API | FastAPI, Pydantic v2 |
+| Persistence | PostgreSQL, SQLAlchemy 2.x async, Alembic |
+| Auth | Argon2id password hashing, RS256 JWTs, Redis-backed refresh tokens |
+| Cache and queue layer | Redis |
+| Background workers | Taskiq / Celery / ARQ (one tool to be picked) |
+| AI | One LLM provider behind own interface, structured outputs, tool calling |
+| Notifications | Telegram Bot API |
+| Infrastructure | Docker Compose, GitHub Actions, structured logs |
+| Testing | pytest: unit, integration, API, and agent evaluation tests |
 
-The stack describes the intended architecture. Not all components are integrated yet.
+LangChain/LangGraph are deliberately not required: no framework for the framework's sake — a plain controlled agent loop is the default, orchestration libraries join only when the simple loop stops covering scenarios.
 
-### Backend Layers
+### Modules
 
-The backend is planned around four main layers:
+| Module | Responsibility |
+| --- | --- |
+| identity | Users, passwords, sessions |
+| integrations | OAuth, connections, tokens, external service adapters |
+| conversations | Dialogs and messages |
+| agent | LLM orchestration, tool registry, agent runs |
+| automations | Rules, schedules, runs |
+| notifications | Telegram and other delivery channels |
+| audit | History of meaningful actions and diagnostics |
 
-- **Presentation:** FastAPI endpoints, request validation, and API response schemas.
-- **Application:** use cases, execution orchestration, and application-level DTOs.
-- **Domain:** plain dataclasses, enums, and core business rules.
-- **Infrastructure:** SQLAlchemy models, repositories, database access, messaging, and external integrations.
+### Layers
 
-The domain and application layers should not depend on FastAPI, Pydantic, or SQLAlchemy ORM models.
+- **Domain:** plain entities, value objects, and business rules independent of infrastructure.
+- **Application:** use cases/handlers, DTOs, ports, and orchestration.
+- **Infrastructure:** SQLAlchemy, external SDKs, LLM clients, queues, OAuth storage.
+- **Presentation:** FastAPI routers and Pydantic schemas, translating HTTP into application DTOs.
+- **Workers:** entry points for background jobs; business scenarios are called through the application layer.
 
-Domain models are intentionally anemic: business workflows and orchestration belong in application services and use cases rather than in ORM entities.
+Pydantic schemas and ORM models never cross into application handlers; external providers and repositories are plugged in through interfaces.
 
-### Debugging Architecture
+### Transparency and safety by design
 
-DayWave's debugging model is intended to remain independent of the underlying workflow runtime.
-
-The platform will translate runtime events into its own trace representation, including:
-
-- Workflow and execution identifiers.
-- Node identifiers and execution status.
-- Start and finish timestamps.
-- Input and output snapshots, subject to configured redaction.
-- Error categories, messages, and diagnostic details.
-- Token usage and cost metadata when available.
-
-This creates a consistent debugging experience even as the underlying execution framework evolves.
+- Every agent run leaves a trace: model, tool calls, arguments, statuses, errors, and durations.
+- Tools have strict input schemas and an allowlist; the agent loop is capped by iterations and time.
+- Actions that change external data require user confirmation bound to a specific proposal, with an idempotency key so nothing executes twice.
+- Scheduled runs are idempotent: a digest is never sent twice on retry.
 
 ## Getting Started
 
@@ -139,7 +115,6 @@ docker compose up --build
 | --- | --- |
 | Frontend | http://localhost:5173 |
 | API | http://localhost:8080 |
-| API docs | http://localhost:8080/docs |
 | Health check | http://localhost:8080/api/v1/health/ready |
 | PostgreSQL | `127.0.0.1:5432` |
 | Redis | `127.0.0.1:6379` |
@@ -150,11 +125,12 @@ PostgreSQL and Redis are available on localhost through `socat` port forwarders,
 
 ### Frontend modes
 
-The frontend supports three modes via `VITE_API_MODE`:
+The frontend reads `VITE_API_MODE` (default `hybrid`):
 
-- `hybrid` (default) — authentication goes to the real FastAPI backend; workflow, execution, and tool data still comes from the local mock because those endpoints do not exist yet.
-- `api` — everything goes through FastAPI. Use it once workflow and execution routes are implemented.
-- `mock` — fully local demo with seeded data and the `demo@daywave.dev` / `demo1234` account.
+- `hybrid` — authentication goes to the real backend; when the API is unreachable, the UI falls back to local demo behavior so the application works even without the backend. Backend validation errors (401/409/422) are always shown to the user, never masked by the fallback.
+- anything else (`api`) — strict mode: every request must reach the backend, network failures are errors.
+
+Dashboards, chat, calendar, and automations screens still use local mock data — the corresponding backend endpoints arrive with the next stages.
 
 ### Local development
 
@@ -182,7 +158,6 @@ uv run ruff check src tests
 uv run mypy src tests
 
 # frontend
-npm run typecheck
 npm run build
 ```
 
@@ -198,35 +173,35 @@ npm run build
 
 Passwords are hashed with Argon2id. Tokens are RS256 JWTs; refresh token IDs are stored in Redis so they can be rotated and revoked. Access and refresh lifetimes are configured with `JWT_ACCESS_EXPIRATION_MINUTES` and `JWT_REFRESH_EXPIRATION_MINUTES`.
 
-Workflow, execution, and tool endpoints are not implemented yet. The frontend keeps using mock data for them.
+Calendar, chat, agent, and automation endpoints are not implemented yet — they are the next development stages.
 
 ## Development Roadmap
 
-The project is being developed incrementally.
+| Release | Content | Result |
+| --- | --- | --- |
+| 0.1 | Foundation, DB, configuration, health checks | ✅ Running base |
+| 0.2 | Registration, sessions, frontend auth integration | ✅ Personal accounts |
+| 0.3 | Google Calendar OAuth + event reading | Real user context |
+| 0.4 | Chat + one agent + calendar tools | First useful AI scenario |
+| 0.5 | Telegram linking + notifications | The assistant outside the browser |
+| 0.6 | Scheduler + worker + daily briefing | First automation |
+| 0.7 | Confirmable actions + audit | Safe execution of actions |
+| 0.8+ | Gmail, Notion, RAG, additional workflows | Product expansion |
 
-- [x] **Foundation:** project structure, configuration, database migrations, and authentication.
-- [ ] **Workflow editor:** node creation, connections, configuration panels, and graph validation.
-- [ ] **Workflow persistence:** save workflows and immutable published versions.
-- [ ] **Execution runtime:** integrate LangGraph and execute supported node types.
-- [ ] **Debugging:** persist node-level traces, errors, logs, and execution metrics.
-- [ ] **Background workers:** queue executions and handle timeouts, retries, and recovery.
-- [ ] **LLM integrations:** configurable providers, tool calling, and usage tracking.
-- [ ] **RAG:** document ingestion, embeddings, Qdrant retrieval, and source inspection.
-- [ ] **Hardening:** permissions, secret handling, observability, and failure-injection tests.
-
-The initial MVP focuses on a small set of node types and predictable execution semantics. More advanced graph features, including arbitrary cycles and complex multi-agent coordination, can be added later.
+A feature is done when: the user scenario and acceptance criteria are clear, happy path and main errors are covered, ownership checks pass, business logic has tests, the UI has loading/empty/error states, and the API contract is documented.
 
 ## Design Principles
 
-1. **Debuggability first.** Every execution should leave enough diagnostic information to explain what happened.
-2. **Explicit execution state.** Workflow and node state transitions should be observable and testable.
-3. **Frameworks are implementation details.** DayWave's public workflow and trace models should not depend on LangGraph or LangChain internals.
-4. **Reliable by design.** Retries and recovery must account for duplicate delivery and external side effects.
-5. **Security by default.** Tool permissions, execution limits, secret redaction, and tenant isolation must be considered as the platform evolves.
+1. **Web-first.** Every scenario is available in the browser; Telegram is a delivery channel, not the product.
+2. **Integrations as tools.** Calendar, email, and notes connect independently; each tool has a strict contract.
+3. **User control.** Before external or potentially harmful actions, the assistant asks for confirmation — and never approves its own actions.
+4. **Transparency.** The user sees which sources were used, which tools ran, and how the execution finished.
+5. **Reliable execution.** Long jobs run asynchronously with logs, retries, backoff, and idempotency.
+6. **Gradual AI complexity.** One manageable agent first; multi-agent platforms and agent builders only if the real need appears.
 
 ## Contributing
 
-Contributions, ideas, bug reports, and feedback are welcome.
+Contributions, ideas, bug reports, and feedback are welcome. The product and MVP plan lives in [`docs/DayWave-MVP-Roadmap.md`](docs/DayWave-MVP-Roadmap.md).
 
 Before opening a pull request:
 
